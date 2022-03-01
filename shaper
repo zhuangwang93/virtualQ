@@ -21,6 +21,20 @@ function shaper_start() {
          match ip dport 5001 0xffff flowid 1:10
 }
 
+
+function dctcp_shaper_start() {
+    ## Packet -> Filter -> Class -> Qdisc -> Network
+    ## We create in the reverse order
+    sudo tc qdisc add dev $1 root handle 1: htb default 10
+    sudo tc class add dev $1 parent 1: classid 1:10 htb \
+         rate $2
+    sudo tc filter add dev $1 protocol ip parent 1: prio 1 u32 \
+         match ip dport 5001 0xffff flowid 1:10
+    sudo tc qdisc add dev $1 parent 1:10 handle 20: red
+        limit 400000 min 20000 max 20001 avpkt 1000
+        burst 20 ecn adaptive bandwidth 1Gbit
+}
+
 function shaper_clear() {
     sudo tc qdisc del dev $1 root
 }
