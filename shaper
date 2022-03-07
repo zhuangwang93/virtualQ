@@ -17,8 +17,10 @@ function shaper_start() {
     sudo tc qdisc add dev $1 root handle 1: htb default 10
     sudo tc class add dev $1 parent 1: classid 1:10 htb \
          rate $2
+    ## iperf port number is 5201
     sudo tc filter add dev $1 protocol ip parent 1: prio 1 u32 \
-         match ip dport 5001 0xffff flowid 1:10
+         match ip dport 5201 0xffff flowid 1:10
+    sudo tc qdisc add dev $1 parent 1:10 handle 20: bfifo limit $3
 }
 
 
@@ -31,8 +33,8 @@ function dctcp_shaper_start() {
     sudo tc filter add dev $1 protocol ip parent 1: prio 1 u32 \
          match ip dport 5001 0xffff flowid 1:10
     sudo tc qdisc add dev $1 parent 1:10 handle 20: red  \
-        limit 400000 min 20000 max 20001 avpkt 1000  \
-        burst 20 ecn adaptive bandwidth 1Gbit
+        limit 400000 min 65000 max 65001 avpkt 1500  \
+        burst 44 ecn adaptive bandwidth 10Gbit
 }
 
 function shaper_clear() {
@@ -53,6 +55,8 @@ function main() {
         start)
             shaper_start $2 $3 $4
         ;;
+        dctcp_start)
+            dctcp_shaper_start $2 $3 $4
         clear)
             shaper_clear $2
             ;;
